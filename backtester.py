@@ -11,7 +11,8 @@ Design rules (delphi-style, intended to prevent the most common p-hacking modes)
 6. No survivorship-bias correction in v0.1 (acknowledged in PRE_REGISTRATION).
 
 Output: dict with sharpe, sortino, max_dd, calmar, hit_rate, turnover, n_trades.
-Designed to print METRIC name=value lines on stdout for /autoresearch loop.
+Designed to print METRIC name=value lines on stdout for the autonomous
+iteration loop to ingest.
 """
 
 from __future__ import annotations
@@ -110,7 +111,7 @@ def run_backtest(
     backtester enforces the t -> t+1 lag.
     """
     cfg = cfg or BacktestConfig()
-    returns = prices.pct_change()
+    returns = prices.pct_change(fill_method=None)
     weights = strategy_fn(prices)
 
     # Cap gross exposure
@@ -142,7 +143,7 @@ def walk_forward_split(prices: pd.DataFrame, train_months: int = 24, test_months
 
 
 def emit_metrics_for_autoresearch(metrics: dict, prefix: str = "") -> None:
-    """Print METRIC lines for /autoresearch loop ingestion."""
+    """Print METRIC lines for the autonomous iteration loop to ingest."""
     p = f"{prefix}_" if prefix else ""
     for k in ("sharpe", "sortino", "calmar", "hit_rate", "ann_return", "ann_vol", "max_dd", "turnover"):
         if k in metrics:

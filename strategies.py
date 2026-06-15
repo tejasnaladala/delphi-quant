@@ -51,7 +51,7 @@ def cross_sectional_mean_reversion(prices: pd.DataFrame, lookback: int = 5, bott
     Standard academic spec: weekly losers tend to bounce (Lo & MacKinlay 1990,
     Jegadeesh 1990). Long-only. Equal-weight. Rebalanced weekly.
     """
-    reversal_signal = prices.pct_change(lookback)
+    reversal_signal = prices.pct_change(lookback, fill_method=None)
     weights = pd.DataFrame(0.0, index=prices.index, columns=prices.columns)
 
     # Rebalance every 5 trading days (weekly cadence, guaranteed alignment)
@@ -66,7 +66,7 @@ def cross_sectional_mean_reversion(prices: pd.DataFrame, lookback: int = 5, bott
     return weights
 
 
-# Registry for the autoresearch loop
+# Registry for the autonomous iteration loop
 STRATEGIES = {
     "buy_and_hold": buy_and_hold,
     "time_series_momentum": time_series_momentum,

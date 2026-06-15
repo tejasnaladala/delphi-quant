@@ -1,4 +1,4 @@
-"""Run a single strategy end-to-end and emit METRIC lines for /autoresearch.
+"""Run a single strategy end-to-end and emit METRIC lines for the loop.
 
 Usage:
     python run_strategy.py --strategy buy_and_hold
@@ -15,8 +15,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from backtester import BacktestConfig, emit_metrics_for_autoresearch, run_backtest, walk_forward_split
+from backtester import BacktestConfig, emit_metrics_for_autoresearch, run_backtest
 from strategies import STRATEGIES
+from walk_forward import run_walk_forward
 
 DATA_PATH = Path(__file__).parent / "data" / "sp500_daily.parquet"
 RESULTS_DIR = Path(__file__).parent / "results"
@@ -34,7 +35,9 @@ def load_prices() -> pd.DataFrame:
         for field in ("Close", "Adj Close"):
             try:
                 close = df.xs(field, axis=1, level=1)
-                return close.dropna(how="all")
+                # Drop rows that are entirely NaN and tickers that never loaded
+                # (e.g. a delisted/failed download), so the universe is clean.
+                return close.dropna(how="all").dropna(axis=1, how="all")
             except KeyError:
                 continue
     return df
@@ -72,25 +75,21 @@ def main() -> int:
     print(f"running strategy: {args.strategy}, params: {params}", file=sys.stderr)
 
     cfg = BacktestConfig()
-    fn = lambda p: strategy(p, **params) if params else strategy(p)
+
+    def fn(p):
+        return strategy(p, **params) if params else strategy(p)
 
     if args.walk_forward:
-        splits = walk_forward_split(prices, train_months=args.train_months, test_months=args.test_months)
-        print(f"walk-forward: {len(splits)} folds", file=sys.stderr)
-        all_metrics = []
-        for i, (train, test) in enumerate(splits):
-            metrics = run_backtest(test, fn, cfg)
-            metrics["fold"] = i
-            all_metrics.append(metrics)
-        # Aggregate over folds
-        agg = {}
-        for k in ("sharpe", "sortino", "calmar", "max_dd", "ann_return"):
-            vals = [m[k] for m in all_metrics if not (isinstance(m[k], float) and (m[k] != m[k]))]
-            if vals:
-                agg[k] = sum(vals) / len(vals)
-                agg[f"{k}_std"] = pd.Series(vals).std()
-        emit_metrics_for_autoresearch(agg, prefix="oos")
-        result = {"strategy": args.strategy, "params": params, "walk_forward": True, "folds": all_metrics, "agg": agg}
+        oos = run_walk_forward(
+            prices,
+            fn,
+            cfg=cfg,
+            train_months=args.train_months,
+            test_months=args.test_months,
+        )
+        print(f"walk-forward: {oos.get('n_folds', 0)} folds, {oos.get('n_days', 0)} OOS days", file=sys.stderr)
+        emit_metrics_for_autoresearch(oos, prefix="oos")
+        result = {"strategy": args.strategy, "params": params, "walk_forward": True, "oos": oos}
     else:
         metrics = run_backtest(prices, fn, cfg)
         emit_metrics_for_autoresearch(metrics)
