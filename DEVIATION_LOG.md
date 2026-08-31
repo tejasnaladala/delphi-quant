@@ -1,22 +1,44 @@
 # Deviation Log
 
-The pre-registration (`PRE_REGISTRATION.md`) requires that any departure from
-the locked methodology, and any change to reported numbers, be logged here with
-a reason rather than silently fixed. Each entry is dated and states what
-changed, why, and what it affected.
+The historical protocol (`PRE_REGISTRATION.md`) asks that departures from the
+declared methodology, and changes to reported numbers, be logged here rather
+than silently fixed. Each entry is dated and states what changed, why, and what
+it affected.
+
+## 2026-08-31 - evidence status and missing-data behavior corrected
+
+**What changed.** The repository is now labeled retrospective because its first
+verifiable commit contains the protocol and implementation together. The
+historical real-data parquet is absent, so the June 2026 numbers are retained as
+unverified rather than reproducible. `run_pipeline.py` no longer substitutes a
+synthetic panel when real data is missing. Synthetic runs require an explicit
+flag, use separate outputs, and carry a synthetic evidence banner and manifest.
+
+**Why.** A filename and claimed lock date do not prove preregistration. Silent
+synthetic fallback can also produce plausible-looking metrics under a canonical
+report filename. Both behaviors overstated the available evidence.
+
+**Verdict impact.** Historical strategy numbers and candidate labels are not
+portfolio-grade evidence until rerun from an immutable, lawfully publishable
+input snapshot with its generated manifest. This correction changes evidence
+status, not the preserved historical values below.
 
 ## 2026-06-15 - v0.1 -> v0.2: evaluation path moved from full-sample to walk-forward OOS
 
+> This entry's original language described the protocol as preregistered. The
+> 2026-08-31 audit above supersedes that evidence claim; references below use
+> "declared protocol" without changing the preserved historical numbers.
+
 **What changed.** The v0.1 code defined `walk_forward_split` in `backtester.py`
 but never used it: `run_backtest` (and therefore the reported numbers) evaluated
-the full sample. The pre-reg (section 2) specifies rolling 24-month train /
+the full sample. The declared protocol (section 2) specifies rolling 24-month train /
 1-month test walk-forward with frozen parameters. The evaluation path is now
 wired to walk-forward OOS via `walk_forward.py` and `pipeline.py`. The reported
 Sharpes are now out-of-sample, aggregated over the concatenated per-fold OOS
 return streams.
 
 **Why.** Full-sample evaluation leaks the entire history into the reported
-metric. The pre-reg locked walk-forward as the evaluation method; the code did
+metric. The protocol declared walk-forward as the evaluation method; the code did
 not honor it. This is a correctness fix, logged here because it changes every
 reported number.
 
@@ -35,17 +57,17 @@ Two distinct sources of difference:
    slightly different adjusted prices (dividend/split re-statement is normal in
    yfinance's adjusted series). On the *same* full-sample method, TS momentum
    moved from 0.77 to 0.720 and the others rounded the same. The 0.77 -> 0.720
-   gap is a genuine data-snapshot deviation, logged here per the pre-reg.
+   gap is a genuine data-snapshot deviation, logged here per the protocol.
 
 2. **Method change (full-sample -> walk-forward OOS).** Moving to the
-   pre-registered walk-forward method changes the numbers again, this time
+   declared walk-forward method changes the numbers again, this time
    upward for all three. The OOS path warms signals up on train history but only
    scores test-window days; the higher OOS Sharpes reflect that the 2010-2025
    sample's worst drawdown stretches sit partly inside warm-up windows. These
-   are the numbers the README now reports, because they are the ones the pre-reg
-   actually specified.
+   were the numbers the README reported after that change because they matched
+   the declared protocol.
 
-**Verdict impact.** Under the pre-registered walk-forward OOS method plus
+**Verdict impact.** Under the declared walk-forward OOS method plus
 Holm-Bonferroni (family-wise alpha 0.05) plus the three deployment gates:
 
 - Buy-and-hold: PASS (sanity, Sharpe 0.898 inside the [0.4, 0.9] band).
@@ -54,9 +76,9 @@ Holm-Bonferroni (family-wise alpha 0.05) plus the three deployment gates:
   gates (5x TC: 0.675; S&P-100 liquidity: 0.938; 3-month regime gap: 0.796). A
   candidate is not deployment-ready; honest scope still requires v0.2
   survivorship-corrected data and months of paper-trade OOS.
-- XS mean reversion: FAIL. OOS Sharpe 0.287 sits at/below the pre-registered
+- XS mean reversion: FAIL. OOS Sharpe 0.287 sits at/below the declared
   0.3 dead threshold and is not significant (raw p 0.285). Consistent with the
-  pre-reg's stated failure mode for post-2010 short-horizon reversal.
+  protocol's stated failure mode for post-2010 short-horizon reversal.
 
 ## 2026-06-15 - backtester `pct_change` fill behavior pinned
 

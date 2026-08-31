@@ -1,6 +1,6 @@
 """Core-invariant tests for the delphi-quant backtester.
 
-Three invariants the pre-reg leans on:
+Three invariants the declared protocol relies on:
 
   1. No look-ahead: a strategy that peeks at t+1 must NOT be able to print money
      on a deterministic series that a non-peeking strategy cannot. We construct

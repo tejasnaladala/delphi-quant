@@ -1,18 +1,18 @@
 """Walk-forward evaluation for delphi-quant.
 
-The pre-reg specifies rolling 24-month train / 1-month test, no overlap, with
+The declared protocol specifies rolling 24-month train / 1-month test, no overlap, with
 parameters frozen per fold. The v0.1 backtester defined `walk_forward_split`
 but the evaluation path never used it: `run_backtest` evaluated the full
 sample, which leaks the entire history into the reported Sharpe. This module
 wires the split into the evaluation path.
 
-What "train" means for the v0.1 baselines: the three pre-registered strategies
-have fixed, pre-registered parameters (no fitting), so the train window is used
+What "train" means for the v0.1 baselines: the three declared strategies
+have fixed parameters (no fitting), so the train window is used
 only to (a) warm up the signal (momentum needs ~13 months of history before it
 emits a position) and (b) prove the frozen-parameter discipline end to end. The
 function accepts a `fit_fn` hook so v0.2 strategies that actually estimate
 parameters can select them on the train window and freeze them for the test
-window. When `fit_fn` is None the strategy's pre-registered defaults are used.
+window. When `fit_fn` is None the strategy's declared defaults are used.
 
 OOS aggregation: per-fold daily net returns are concatenated into a single OOS
 return stream and metrics are computed once on that stream. This is the honest
@@ -22,7 +22,7 @@ and upward-biased toward folds with tiny denominators.
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 import pandas as pd
 
@@ -116,12 +116,12 @@ def run_walk_forward(
 
     Args:
         prices: T x N adjusted-close frame.
-        strategy_fn: default (pre-registered) strategy used when fit_fn is None.
+        strategy_fn: default declared strategy used when fit_fn is None.
         cfg: backtest config (costs etc).
-        train_months / test_months: rolling window sizes (pre-reg: 24 / 1).
+        train_months / test_months: rolling window sizes (declared: 24 / 1).
         fit_fn: optional hook to select frozen params on each train window.
         train_test_gap_months: purge gap between train end and test start. The
-            pre-reg regime-stability gate uses 3 months here.
+            declared regime-stability gate uses 3 months here.
 
     Returns:
         dict with aggregated OOS metrics, the per-fold OOS Sharpe list, and the

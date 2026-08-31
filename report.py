@@ -1,9 +1,8 @@
 """v0.1 report generator for delphi-quant.
 
 Emits a markdown report of the full search trajectory, including every failure
-and rejection, the multiple-comparison-corrected significance, and the pre-reg
-verdicts. The report is generated whether or not any candidate qualifies
-(pre-reg section 6).
+and rejection, the multiple-comparison-corrected significance, and the declared
+protocol verdicts. The report is generated whether or not any candidate qualifies.
 
 No cherry-picking: every strategy in the RejectionLog appears in the trajectory
 table, in evaluation order, with its failed checks listed.
@@ -32,7 +31,8 @@ def generate_report(
     log: RejectionLog,
     context: dict,
     title: str = "delphi-quant v0.1 verification report",
-    numbers_pending_live_run: bool = False,
+    evidence_kind: str = "unspecified",
+    provenance: dict[str, object] | None = None,
 ) -> str:
     lines: list[str] = []
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
@@ -43,12 +43,25 @@ def generate_report(
     lines.append("")
     lines.append(f"Generated {ts}.")
     lines.append("")
-    if numbers_pending_live_run:
+    if evidence_kind == "synthetic":
         lines.append(
-            "> Numbers below were produced on synthetic data because the price "
-            "feed was unreachable at generation time. They verify the pipeline "
-            "logic, not live-data Sharpes. Re-run on cached data to refresh."
+            "> **SYNTHETIC LOGIC CHECK ONLY.** Every number below comes from a "
+            "deterministic random panel. It is not market evidence, does not validate "
+            "a strategy, and must not replace the canonical real-data report."
         )
+        lines.append("")
+    elif evidence_kind == "real":
+        lines.append(
+            "> **REAL-DATA COMPUTATION.** Reproducibility is tied to the input hash "
+            "below. This code does not itself establish redistribution rights or data quality."
+        )
+        lines.append("")
+
+    if provenance:
+        lines.append("## Input provenance")
+        lines.append("")
+        for key, value in provenance.items():
+            lines.append(f"- {key}: `{value}`")
         lines.append("")
 
     lines.append("## Evaluation setup")
@@ -129,17 +142,22 @@ def generate_report(
     candidates = [r for r in log.records if r.verdict == "CANDIDATE"]
     lines.append("## Verdict")
     lines.append("")
-    if candidates:
+    if evidence_kind == "synthetic":
+        lines.append(
+            "This run exercised the pipeline on synthetic data. Its labels and metrics are "
+            "test outputs only; no candidate or deployment conclusion is supported."
+        )
+    elif candidates:
         names = ", ".join(r.label for r in candidates)
         lines.append(
             f"{len(candidates)} strategy/strategies cleared every stage and qualify as "
-            f"v0.1 candidates: {names}. Per the pre-reg honest scope, a candidate is not "
+            f"v0.1 candidates: {names}. Per the declared protocol, a candidate is not "
             "deployment-ready; it still needs survivorship-bias-corrected data (v0.2) and "
             "several months of paper-trade OOS validation."
         )
     else:
         lines.append(
-            "No strategy cleared every stage (pre-reg target, Holm correction, and all "
+            "No strategy cleared every stage (declared target, Holm correction, and all "
             "deployment gates). This is an expected v0.1 outcome: the framework is built "
             "to reject multiple-comparison artifacts and cost-fragile strategies, not to "
             "manufacture a candidate."

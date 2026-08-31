@@ -10,7 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -24,11 +24,14 @@ RESULTS_DIR = Path(__file__).parent / "results"
 RESULTS_DIR.mkdir(exist_ok=True)
 
 
-def load_prices() -> pd.DataFrame:
-    if not DATA_PATH.exists():
-        print("ERROR: data not fetched yet. Run: python fetch_data.py", file=sys.stderr)
-        sys.exit(1)
-    df = pd.read_parquet(DATA_PATH)
+def load_prices(data_path: str | Path = DATA_PATH) -> pd.DataFrame:
+    """Load an explicit local price snapshot without substituting other data."""
+    path = Path(data_path)
+    if not path.is_file():
+        raise FileNotFoundError(
+            f"price snapshot not found at {path}. Run fetch_data.py or pass --data-path."
+        )
+    df = pd.read_parquet(path)
     # yfinance returns multi-index columns (ticker, field). Pull adj close only.
     if isinstance(df.columns, pd.MultiIndex):
         # Try common field names
@@ -60,14 +63,19 @@ def parse_params(param_args: list[str]) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--strategy", required=True, choices=list(STRATEGIES.keys()))
+    ap.add_argument("--data-path", type=Path, default=DATA_PATH)
     ap.add_argument("--param", action="append", default=[], help="key=value")
     ap.add_argument("--walk-forward", action="store_true")
     ap.add_argument("--train-months", type=int, default=24)
     ap.add_argument("--test-months", type=int, default=1)
     args = ap.parse_args()
 
-    print(f"loading data from {DATA_PATH}...", file=sys.stderr)
-    prices = load_prices()
+    print(f"loading data from {args.data_path}...", file=sys.stderr)
+    try:
+        prices = load_prices(args.data_path)
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
     print(f"  shape: {prices.shape}, date range: {prices.index[0].date()} to {prices.index[-1].date()}", file=sys.stderr)
 
     strategy = STRATEGIES[args.strategy]
@@ -96,7 +104,7 @@ def main() -> int:
         result = {"strategy": args.strategy, "params": params, "walk_forward": False, "metrics": metrics}
 
     # Save result
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     out = RESULTS_DIR / f"{args.strategy}_{ts}.json"
     out.write_text(json.dumps(result, indent=2, default=str))
     print(f"saved: {out}", file=sys.stderr)

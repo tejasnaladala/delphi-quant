@@ -61,7 +61,7 @@ def fetch_universe(tickers: list[str], start: str, end: str) -> pd.DataFrame:
             )
             all_data.append(df)
             time.sleep(0.5)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - one failed batch must not abort the fetch
             print(f"    batch failed: {exc}")
     return pd.concat(all_data, axis=1) if all_data else pd.DataFrame()
 

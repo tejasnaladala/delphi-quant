@@ -78,7 +78,7 @@ def test_holm_more_conservative_than_uncorrected():
     # Two hypotheses, both p < 0.05 (uncorrected "significant"). Holm rank-1
     # threshold is 0.05/2 = 0.025. The smallest p (0.03) exceeds it, so NOTHING
     # is rejected even though both p-values clear the naive 0.05 bar. This is the
-    # multiple-comparison artifact the pre-reg exists to catch.
+    # multiple-comparison artifact the declared protocol is intended to catch.
     pvals = {"a": 0.03, "b": 0.04}
     res = holm_bonferroni(pvals, family_alpha=0.05)
     by_label = {r.label: r for r in res}
