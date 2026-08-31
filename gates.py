@@ -1,6 +1,6 @@
 """Capital-deployment gates for delphi-quant.
 
-The pre-reg (section 4) requires any candidate to additionally hold up under
+The declared protocol (section 4) requires any candidate to additionally hold up under
 three robustness re-runs before it can be called a deployment candidate:
 
   1. 5x transaction-cost sensitivity (50 bps per side instead of 10).
@@ -10,8 +10,8 @@ three robustness re-runs before it can be called a deployment candidate:
 
 Each gate is a walk-forward OOS re-run with one parameter changed. A gate
 passes if the OOS Sharpe stays above a survival floor. The floor is expressed
-relative to the strategy's own pre-reg failure threshold so the gates do not
-silently invent a new bar: a strategy that the pre-reg already calls "alive"
+relative to the strategy's own declared failure threshold so the gates do not
+silently invent a new bar: a strategy that the protocol already calls "alive"
 should not flip to "dead" under a reasonable stress, and a gate that pushes it
 below its own dead-line is a genuine rejection.
 
@@ -126,7 +126,7 @@ def run_all_gates(
     survival_floor: float,
     cfg: BacktestConfig | None = None,
 ) -> list[GateResult]:
-    """Run the three pre-registered deployment gates in order."""
+    """Run the three declared deployment gates in order."""
     cfg = cfg or BacktestConfig()
     return [
         tc_sensitivity_gate(prices, strategy_fn, survival_floor, base_cfg=cfg),

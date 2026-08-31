@@ -1,6 +1,13 @@
-# delphi-quant v0.1 verification report
+# delphi-quant v0.1 historical report (unverified)
 
 Generated 2026-06-15 11:45 UTC.
+
+> **AUDIT STATUS (2026-08-31): UNVERIFIED HISTORICAL ARTIFACT.** The parquet
+> snapshot used for this report is absent from the repository and no immutable
+> input hash or lawful redistribution record accompanies it. Git history also
+> does not establish preregistration before analysis. The values below are
+> preserved for transparency but are not currently reproducible evidence and
+> must not be presented as a validated strategy result.
 
 ## Evaluation setup
 
@@ -32,7 +39,7 @@ Family of 3 hypotheses, family-wise alpha 0.05.
 
 ### buy_and_hold - PASS
 
-sanity baseline behaved within pre-registered ranges
+sanity baseline behaved within the declared ranges
 
 | Check | Comparison | Threshold | Realized | Passed |
 |---|---|---|---|---|
@@ -43,7 +50,7 @@ sanity baseline behaved within pre-registered ranges
 
 ### time_series_momentum - CANDIDATE
 
-cleared pre-reg target, Holm correction, and all three deployment gates
+cleared the declared target, Holm correction, and all three deployment gates
 
 | Check | Comparison | Threshold | Realized | Passed |
 |---|---|---|---|---|
@@ -57,7 +64,7 @@ cleared pre-reg target, Holm correction, and all three deployment gates
 
 ### cross_sectional_mean_reversion - FAIL
 
-OOS Sharpe 0.287 at or below pre-reg dead threshold 0.3
+OOS Sharpe 0.287 at or below the declared dead threshold 0.3
 
 | Check | Comparison | Threshold | Realized | Passed |
 |---|---|---|---|---|
@@ -78,4 +85,4 @@ OOS Sharpe 0.287 at or below pre-reg dead threshold 0.3
 
 ## Verdict
 
-1 strategy/strategies cleared every stage and qualify as v0.1 candidates: time_series_momentum. Per the pre-reg honest scope, a candidate is not deployment-ready; it still needs survivorship-bias-corrected data (v0.2) and several months of paper-trade OOS validation.
+The historical run labeled one strategy a v0.1 candidate: time_series_momentum. Because the input snapshot and prospective protocol evidence are unavailable, that label is not currently verified. Even under the declared protocol, a candidate would not be deployment-ready; it would still need survivorship-bias-corrected data and prospective paper-trade validation.

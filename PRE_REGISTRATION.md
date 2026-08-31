@@ -1,15 +1,19 @@
-# Pre-Registration: delphi-quant v0.1
+# Retrospective Protocol Record: delphi-quant v0.1
 
-**Date locked**: 2026-04-27
+> **Evidence caveat (2026-08-31 audit):** The filename is retained for historical
+> links, but Git history does not establish preregistration. The first verifiable
+> commit on 2026-05-05 contains this protocol and the implementation together.
+> The claimed 2026-04-27 lock date has no independent immutable artifact in this
+> repository. Treat every threshold below as a retrospectively documented,
+> declared protocol threshold, not proof that it preceded analysis.
+
+**Claimed date locked**: 2026-04-27
 **Lead**: Tejas Naladala
-**Repo state at lock**: see git commit `git rev-parse HEAD`
+**First verifiable repository state**: `6af528ad76abe2e8a15f66e515bd9c1ecd6bae37`
 
-This document is a delphi-style pre-registration. It locks the hypotheses,
-universe, evaluation methodology, and success criteria BEFORE any backtest is
-run. Deviations from this document must be logged as deviations (with reason)
-in `DEVIATION_LOG.md`, not silently fixed. The same rule we applied to the
-Parchment Labs Sobol pilot when it violated its own consistency check, and the
-same rule we applied to the maze-rl-baselines harness audit.
+This document records the hypotheses, universe, evaluation methodology, and
+success criteria represented by the first public artifact. Later departures
+must be logged in `DEVIATION_LOG.md`, not silently fixed.
 
 ## 1. Universe
 
@@ -33,10 +37,10 @@ same rule we applied to the maze-rl-baselines harness audit.
   parameters per fold
 - **Risk-free rate**: 4% annual (current 3-month T-bill approximation)
 
-## 3. Pre-registered baseline strategies (v0.1)
+## 3. Declared baseline strategies (v0.1)
 
-All three strategies are committed in `strategies.py` BEFORE any backtest runs.
-Their hypotheses and success criteria are locked here.
+All three strategies appear in the first verifiable commit. The repository does
+not prove whether any backtest ran before that commit.
 
 ### H1: Buy-and-hold (sanity check)
 
@@ -49,16 +53,16 @@ Their hypotheses and success criteria are locked here.
 
 - **Hypothesis**: top-20 by 12-month return (skip most recent month) outperforms
   buy-and-hold on Sharpe net of TC.
-- **Pre-registered Sharpe target**: > 0.7 OOS net of TC.
-- **Pre-registered failure mode**: Sharpe <= 0.5 OOS would indicate the
+- **Declared Sharpe target**: > 0.7 OOS net of TC.
+- **Declared failure mode**: Sharpe <= 0.5 OOS would indicate the
   strategy is dead in this regime.
 
 ### H3: Cross-sectional mean reversion (Lo & MacKinlay 1990, Jegadeesh 1990)
 
 - **Hypothesis**: bottom-20 by 5-day return outperforms buy-and-hold on Sharpe
   net of TC.
-- **Pre-registered Sharpe target**: > 0.5 OOS net of TC.
-- **Pre-registered failure mode**: Sharpe <= 0.3 OOS would indicate the strategy
+- **Declared Sharpe target**: > 0.5 OOS net of TC.
+- **Declared failure mode**: Sharpe <= 0.3 OOS would indicate the strategy
   is dead in this regime (consistent with the broad finding that pure XS
   reversal has been arbitraged away post-2010).
 
@@ -70,7 +74,7 @@ The `/autoresearch` loop has the following limits:
 - **Max walk-forward folds per strategy**: as defined by the harness
 - **Multiple-comparison correction**: Holm-Bonferroni at family-wise alpha = 0.05
   on the set of all evaluated strategies
-- **Pre-reg gate**: any strategy with OOS Sharpe > 1.5 must be re-run on the
+- **Declared hold-out gate**: any strategy with OOS Sharpe > 1.5 must be re-run on the
   hold-out 2024-2025 period (not used for any selection) to qualify as a
   candidate
 - **Capital deployment gate**: candidate must additionally hold up under:
@@ -82,7 +86,7 @@ The `/autoresearch` loop has the following limits:
 
 - Looking at OOS metrics during strategy iteration (only IS metrics for
   hyperparameter selection)
-- Adding hyperparameters not in the pre-reg without logging the addition as a
+- Adding hyperparameters not in the declared protocol without logging the addition as a
   deviation
 - Running the same strategy with different random seeds and reporting only the
   best (the harness is deterministic; if randomness is added it must be averaged
@@ -102,7 +106,7 @@ The `/autoresearch` loop has the following limits:
 ## 7. Honest scope
 
 - v0.1 will not produce a strategy ready for real-money deployment
-- v0.1 produces: a credible, pre-registered evaluation framework + a search
+- v0.1 produces: an inspectable evaluation framework + a search
   trajectory + a list of candidates that pass strict OOS + multiple-comparison
   correction
 - Real-money deployment requires v0.2 (survivorship-bias-corrected) +

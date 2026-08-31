@@ -4,23 +4,23 @@ Stages, in order:
 
   1. Walk-forward OOS evaluation of every strategy in the family (frozen params
      per fold, 24-month train / 1-month test, no overlap).
-  2. Per-strategy pre-reg checks (the locked success/failure thresholds from
+  2. Per-strategy protocol checks (the declared success/failure thresholds from
      PRE_REGISTRATION.md section 3).
   3. Holm-Bonferroni multiple-comparison correction across the whole family at
-     family-wise alpha 0.05 (pre-reg section 4).
-  4. Capital-deployment gates for any strategy that clears the pre-reg bar and
-     survives the multiple-comparison correction (pre-reg section 4):
+     family-wise alpha 0.05 (protocol section 4).
+  4. Capital-deployment gates for any strategy that clears the declared bar and
+     survives the multiple-comparison correction (protocol section 4):
      5x TC, S&P-100 liquidity, 3-month regime gap.
   5. Structured rejection logging of every strategy (check, threshold,
      realized, verdict).
 
 The verdict vocabulary:
-  PASS         - sanity baseline behaved as pre-registered.
-  ALIVE        - above the pre-reg "dead" threshold but not a deployment candidate.
-  FAIL         - below the pre-reg dead threshold.
+  PASS         - sanity baseline behaved within the declared range.
+  ALIVE        - above the declared "dead" threshold but not a deployment candidate.
+  FAIL         - below the declared dead threshold.
   REJECTED_MC  - Sharpe looked alive but not significant after Holm correction.
-  CANDIDATE    - cleared pre-reg + Holm + all deployment gates.
-  GATED        - cleared pre-reg + Holm but failed at least one deployment gate.
+  CANDIDATE    - cleared declared threshold + Holm + all deployment gates.
+  GATED        - cleared declared threshold + Holm but failed a deployment gate.
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ from walk_forward import StrategyFn, run_walk_forward
 
 FAMILY_ALPHA = 0.05
 
-# Pre-registered per-strategy thresholds (PRE_REGISTRATION.md section 3).
+# Retrospectively declared per-strategy thresholds (protocol section 3).
 PRE_REG = {
     "buy_and_hold": {
         "kind": "sanity",
@@ -59,9 +59,10 @@ PRE_REG = {
     },
 }
 
-# Pre-reg deployment-gate trigger: a strategy must clear pre-reg + Holm before
-# the deployment gates run. The pre-reg lists a Sharpe > 1.5 OOS hold-out gate
-# for the autonomous search; for the three locked baselines we apply the gates
+# Protocol deployment-gate trigger: a strategy must clear its declared target
+# and Holm correction before the deployment gates run. The protocol lists a
+# Sharpe > 1.5 OOS hold-out gate for the autonomous search; for the three
+# declared baselines we apply the gates
 # to any strategy whose verdict is CANDIDATE-eligible (alpha kind, above target,
 # Holm-significant) so the framework demonstrates the gate path end to end.
 
@@ -100,8 +101,8 @@ def _sanity_checks(name: str, oos: dict, spec: dict) -> tuple[list[CheckRecord],
         ),
     ]
     if sharpe_ok and dd_ok:
-        return checks, "PASS", "sanity baseline behaved within pre-registered ranges"
-    return checks, "FAIL", "sanity baseline fell outside pre-registered ranges (possible backtester bug)"
+        return checks, "PASS", "sanity baseline behaved within declared ranges"
+    return checks, "FAIL", "sanity baseline fell outside declared ranges (possible backtester bug)"
 
 
 def _alpha_checks(name: str, oos: dict, spec: dict) -> tuple[list[CheckRecord], str, str]:
@@ -125,10 +126,10 @@ def _alpha_checks(name: str, oos: dict, spec: dict) -> tuple[list[CheckRecord], 
         ),
     ]
     if not above_dead:
-        return checks, "FAIL", f"OOS Sharpe {sharpe:.3f} at or below pre-reg dead threshold {spec['dead']}"
+        return checks, "FAIL", f"OOS Sharpe {sharpe:.3f} at or below declared dead threshold {spec['dead']}"
     if not above_target:
-        return checks, "ALIVE", f"OOS Sharpe {sharpe:.3f} above dead line but below pre-reg target {spec['target']}"
-    return checks, "CANDIDATE_PENDING_MC", f"OOS Sharpe {sharpe:.3f} above pre-reg target {spec['target']}"
+        return checks, "ALIVE", f"OOS Sharpe {sharpe:.3f} above dead line but below declared target {spec['target']}"
+    return checks, "CANDIDATE_PENDING_MC", f"OOS Sharpe {sharpe:.3f} above declared target {spec['target']}"
 
 
 def evaluate_family(
@@ -144,7 +145,7 @@ def evaluate_family(
     cfg = cfg or BacktestConfig()
     strategies = strategies or STRATEGIES
 
-    # Stage 1 + 2: walk-forward OOS + per-strategy pre-reg checks.
+    # Stage 1 + 2: walk-forward OOS + declared protocol checks.
     evals: dict[str, StrategyEval] = {}
     for name, fn in strategies.items():
         oos = run_walk_forward(prices, fn, cfg=cfg)
@@ -223,11 +224,11 @@ def evaluate_family(
                     )
                 if all(g.passed for g in gates):
                     verdict = "CANDIDATE"
-                    reason = "cleared pre-reg target, Holm correction, and all three deployment gates"
+                    reason = "cleared declared target, Holm correction, and all three deployment gates"
                 else:
                     failed = [g.name for g in gates if not g.passed]
                     verdict = "GATED"
-                    reason = f"cleared pre-reg + Holm but failed deployment gate(s): {', '.join(failed)}"
+                    reason = f"cleared declared target + Holm but failed deployment gate(s): {', '.join(failed)}"
 
         log.add(
             StrategyRecord(

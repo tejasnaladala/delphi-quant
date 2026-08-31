@@ -1,7 +1,8 @@
-"""Pre-registered baseline strategies for delphi-quant v0.1.
+"""Declared baseline strategies for delphi-quant v0.1.
 
-All strategies in this file were committed to git BEFORE running any backtests.
-See PRE_REGISTRATION.md for the locked hypotheses and the success criteria.
+These strategies and the retrospective protocol appear together in the first
+verifiable commit. See PRE_REGISTRATION.md for the evidence caveat, hypotheses,
+and success criteria.
 
 Each strategy returns a (T x N) weights DataFrame aligned to the input prices.
 Weights at row t represent the desired end-of-day-t position. The backtester
@@ -10,7 +11,6 @@ enforces a 1-day lag before the position is taken (no look-ahead).
 
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 
 

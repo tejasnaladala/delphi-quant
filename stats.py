@@ -2,7 +2,7 @@
 
 Two things live here:
 
-1. A Sharpe-ratio significance test. The pre-reg evaluates strategies on
+1. A Sharpe-ratio significance test. The declared protocol evaluates strategies on
    Sharpe net of cost, so the per-strategy hypothesis test is "is this Sharpe
    distinguishable from zero". We use the standard large-sample result that the
    t-statistic for an annualized Sharpe SR over T daily observations is
@@ -12,7 +12,7 @@ Two things live here:
    higher-moment correction, which is documented as a v0.1 limitation.
 
 2. Holm-Bonferroni step-down multiple-comparison correction over the family of
-   evaluated strategies. The pre-reg locks family-wise alpha at 0.05. Holm is
+   evaluated strategies. The declared protocol sets family-wise alpha at 0.05. Holm is
    uniformly more powerful than plain Bonferroni and still controls FWER under
    arbitrary dependence, which is the honest default when strategy p-values are
    correlated (they share a universe and a backtester).
@@ -57,7 +57,7 @@ def holm_bonferroni(pvalues: dict[str, float], family_alpha: float = 0.05) -> li
 
     Args:
         pvalues: mapping of hypothesis label -> raw two-sided p-value.
-        family_alpha: family-wise error rate to control (pre-reg: 0.05).
+        family_alpha: family-wise error rate to control (declared default: 0.05).
 
     Returns:
         One HolmResult per hypothesis, ordered ascending by raw p-value.

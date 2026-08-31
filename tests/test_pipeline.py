@@ -39,7 +39,7 @@ def test_pipeline_records_failed_checks():
     prices = _synth_panel()
     log, _ = evaluate_family(prices)
     for rec in log.records:
-        # Every record has at least the pre-reg checks + raw p + Holm check.
+        # Every record has at least the protocol checks + raw p + Holm check.
         assert len(rec.checks) >= 3
         # Verdict is from the known vocabulary.
         assert rec.verdict in {
