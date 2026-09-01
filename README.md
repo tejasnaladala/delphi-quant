@@ -1,56 +1,72 @@
 # delphi-quant
 
-A small verification harness for systematic equity research. It keeps the
-strategy family, thresholds, walk-forward evaluation, multiple-comparison
-correction, deployment gates, and rejection log in one inspectable path.
+`delphi-quant` is a Python research harness for three long-only equity
+baselines. Each run follows one path from an explicit price snapshot to
+out-of-sample metrics, statistical checks, stress gates, a Markdown report, and
+a structured rejection log.
 
 ## Evidence status
 
-This repository is a **retrospective research artifact**, not a preregistered
-study and not a deployable trading system.
+This is a **retrospective, unverified research artifact**.
 
-- The first verifiable Git commit contains both the protocol and its
-  implementation. History therefore cannot establish that the hypotheses were
-  locked before analysis.
-- The parquet snapshot behind the historical June 2026 report is not committed,
-  hashed, or otherwise available here. The report is retained as an explicitly
-  unverified historical artifact, not as a reproducible result.
-- A normal pipeline run now fails closed when the requested real-data snapshot
-  is absent. Synthetic data is used only with an explicit `--synthetic` flag and
-  writes to separate, unmistakably labeled outputs.
-- No result in this repository is investment advice or evidence of a strategy
-  suitable for capital deployment.
+The first verifiable Git commit contains the protocol and implementation
+together, so the repository does not establish prospective preregistration.
+The price snapshot used for the June 2026 report is also absent and has no
+recorded hash. `REPORT_v0.1.md` remains in the repository as an audit record;
+its strategy metrics are not reproducible evidence.
 
-## What is implemented
+Real-data runs require an explicit local parquet file and stop without writing
+results when that file is missing. Synthetic runs require `--synthetic` and use
+separate filenames by default. No result here supports capital deployment.
 
-1. Rolling walk-forward evaluation with 24-month warm-up windows and one-month
-   scored windows.
-2. A declared three-strategy baseline family with fixed decision thresholds.
-3. Two-sided Sharpe significance tests and Holm-Bonferroni family-wise error
-   control.
-4. Transaction-cost, liquid-universe, and regime-gap stress gates.
-5. JSONL rejection records containing every strategy, check, realized value,
-   threshold, and verdict.
-6. Input manifests that record the exact real-data SHA-256, panel shape, and
-   observation range without publishing a private local path.
+## Pipeline
 
-The harness is useful as code even when every strategy fails. Its job is to make
-rejection legible, not to manufacture a candidate.
+```text
+price parquet
+  -> SHA-256 input manifest
+  -> monthly out-of-sample evaluation
+  -> retrospectively recorded strategy thresholds
+  -> Sharpe significance tests + Holm-Bonferroni correction
+  -> cost, liquidity, and train/test-gap stress gates
+  -> Markdown report + JSONL rejection log
+```
 
-## Reproduce the code path
+The implemented baseline family is:
+
+- equal-weight buy and hold;
+- long-only cross-sectional momentum using a 252-trading-day lookback, a
+  21-day skip, monthly rebalancing, and the top 20 names;
+- long-only five-day cross-sectional reversal, rebalanced weekly into the
+  bottom 20 names.
+
+The evaluator uses an initial 24 months of history, then scores consecutive
+one-month windows while retaining the expanding history for signal warm-up.
+Positions are lagged by one trading day. Default costs are 10 bps of transaction
+cost and 5 bps of slippage per side.
+
+Candidate checks include a fivefold transaction-cost and slippage stress, a
+rerun on a fixed 50-ticker mega-cap list, and a scored window shifted three
+months past the training cutoff. Signal warm-up remains continuous through that
+gap. Every baseline receives a record with its thresholds, realized values,
+pass/fail checks, p-value, Holm-Bonferroni decision, and final verdict.
+
+## Run locally
+
+Python 3.10+ is recommended.
 
 ```bash
 python -m venv .venv
-.venv/Scripts/pip install yfinance pandas numpy scipy pyarrow pytest
-.venv/Scripts/python -m pytest -q
+# Activate .venv with your shell, then:
+python -m pip install yfinance pandas numpy scipy pyarrow pytest
+python -m pytest -q
 ```
 
-The test suite is network-free and uses deterministic synthetic fixtures.
+The tests use deterministic synthetic fixtures and make no network requests.
 
-### Explicit synthetic logic check
+### Synthetic pipeline check
 
 ```bash
-.venv/Scripts/python run_pipeline.py --synthetic
+python run_pipeline.py --synthetic
 ```
 
 This writes:
@@ -59,57 +75,58 @@ This writes:
 - `results/synthetic_rejection_log.jsonl`
 - `results/synthetic_input_manifest.json`
 
-Those metrics test control flow only. They cannot support a market or strategy
-claim and do not overwrite `REPORT_v0.1.md`.
+These outputs exercise the pipeline only. The default paths leave the
+historical report untouched and carry no market-performance claim.
 
-### Real-data computation
+### Real-data run
 
 ```bash
-.venv/Scripts/python fetch_data.py
-.venv/Scripts/python run_pipeline.py \
+python fetch_data.py
+python run_pipeline.py \
   --data-path data/sp500_daily.parquet \
-  --data-source-note "yfinance pull for local research; verify redistribution rights"
+  --data-source-note "local yfinance snapshot; redistribution rights unverified"
 ```
 
-If the parquet is missing or unreadable, the command exits with status 2 and
-generates nothing. A successful run writes `results/input_manifest.json`; cite
-that hash with any result. The manifest improves byte-level reproducibility but
-does not establish data licensing, point-in-time constituent correctness, or
-economic validity.
-
-Single-strategy runs follow the same fail-closed rule:
-
-```bash
-.venv/Scripts/python run_strategy.py \
-  --strategy time_series_momentum \
-  --walk-forward \
-  --data-path data/sp500_daily.parquet
-```
+`fetch_data.py` is the only step above that requires network access. A
+successful pipeline run writes `results/input_manifest.json` with the exact
+input hash, shape, and date range.
 
 ## Repository map
 
-| Path | Purpose |
+| Path | Contents |
 |---|---|
-| `PRE_REGISTRATION.md` | Historical filename for the retrospective declared protocol; its evidence caveat is part of the document. |
-| `DEVIATION_LOG.md` | Chronological changes and the 2026 audit correction. |
-| `backtester.py` | Daily-bar accounting, lag, costs, and metrics. |
-| `walk_forward.py` | Fold construction and out-of-sample aggregation. |
-| `strategies.py` | Fixed baseline strategy definitions. |
-| `stats.py` | Sharpe p-values and Holm-Bonferroni correction. |
-| `gates.py` | Cost, liquid-universe, and regime-gap stress checks. |
-| `pipeline.py` | Family-level evaluation and verdict path. |
-| `rejection_log.py` | Structured, append-only-within-run records. |
-| `provenance.py` | Real and synthetic input manifests. |
-| `REPORT_v0.1.md` | Unverified historical report retained for auditability. |
+| `pipeline.py` | Family evaluation, protocol checks, correction, and verdicts |
+| `backtester.py` | Daily-bar accounting, lag, costs, and performance metrics |
+| `walk_forward.py` | Monthly out-of-sample windows and aggregation |
+| `strategies.py` | The three baseline strategy implementations |
+| `stats.py` | Sharpe p-values and Holm-Bonferroni correction |
+| `gates.py` | Cost, fixed-universe, and train/test-gap stress checks |
+| `rejection_log.py` | Per-strategy JSONL records |
+| `provenance.py` | Real and synthetic input manifests |
+| `PRE_REGISTRATION.md` | Retrospective protocol record and evidence caveat |
+| `DEVIATION_LOG.md` | Method changes and the August 2026 audit correction |
+| `REPORT_v0.1.md` | Preserved, unverified historical report |
 
-## Known limitations
+## Limitations
 
-- Current-constituent data is survivorship-biased.
-- The repository has no immutable licensed market-data snapshot.
-- Daily bars do not model intraday execution or market impact.
-- There is no factor risk model, covariance shrinkage, or regime model.
-- The current p-value calculation is a simplified research diagnostic, not a
-  complete treatment of autocorrelation, non-normality, or data snooping.
-- No paper-trading or prospective holdout evidence is present.
+- The fetcher uses a hard-coded April 2026 large-cap universe. It is
+  survivorship-biased and is not a point-in-time S&P 500 constituent history.
+- Historical `S&P 500` and `S&P 100` labels are legacy names. The implemented
+  universes are fixed large-cap lists of 104 and 50 tickers.
+- The evaluator expands its history after the initial 24 months; it does not
+  maintain a fixed 24-month rolling training window.
+- Train and test slices share the cutoff timestamp because both ranges are
+  inclusive. A fitted strategy would need a non-overlapping boundary before its
+  score could be treated as clean out-of-sample evidence.
+- `time_series_momentum` is the historical function name. Its implementation is
+  cross-sectional ranking on lagged returns.
+- The backtester enforces a one-day execution lag. It cannot detect future data
+  read inside a strategy function; the tests document that failure mode.
+- Daily bars and fixed basis-point costs omit intraday execution, spread
+  dynamics, capacity, and market impact.
+- The Sharpe p-value is a first-order normal approximation. It does not adjust
+  for autocorrelation, non-normal returns, or broader data-snooping risk.
+- The repository contains no immutable licensed market-data snapshot,
+  point-in-time universe, prospective holdout, or paper-trading record.
 
 MIT licensed. See `LICENSE`.
